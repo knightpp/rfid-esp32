@@ -3,7 +3,6 @@ use esp_idf_hal::{
     delay,
     prelude::Peripherals,
     spi::{self, SpiDeviceDriver, SpiDriver, SpiDriverConfig},
-    units::MegaHertz,
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use mfrc522::comm::eh02::spi::SpiInterface;
@@ -22,29 +21,27 @@ fn main() -> anyhow::Result<()> {
 
     let peripherals = Peripherals::take().context("no peripherals")?;
 
-    let spi = peripherals.spi2;
-    let sda = peripherals.pins.gpio2;
+    let spi = peripherals.spi3;
+    let sda = peripherals.pins.gpio5;
     let sclk = peripherals.pins.gpio18;
-    let mosi = peripherals.pins.gpio23;
     let miso = peripherals.pins.gpio19;
+    let mosi = peripherals.pins.gpio23;
 
-    log::debug!("create driver...");
     let driver = SpiDriver::new(spi, sclk, miso, Some(mosi), &SpiDriverConfig::new())
         .context("create spi driver")?;
-    let config = spi::config::Config::new().baudrate(MegaHertz(1).into());
+    let config = spi::config::Config::new();
     let device = SpiDeviceDriver::new(&driver, Some(sda), &config)?;
-
-    log::debug!("create mfrc522...");
     let spi = SpiInterface::new(device).with_delay(|| delay::Ets::delay_us(50));
     let mut mfrc522 = mfrc522::Mfrc522::new(spi).init().context("init mfrc522")?;
 
-    log::debug!("get mfrc522 version...");
-    let version = mfrc522.version()?;
+    loop {
+        let version = mfrc522.version()?;
 
-    log::info!("mfrc522 reported version is 0x{:X}", version);
-    if !(version == 0x91 || version == 0x92) {
-        log::error!("version mismatch!")
+        log::info!("mfrc522 reported version is 0x{:X}", version);
+        if !(version == 0x91 || version == 0x92) {
+            log::error!("version mismatch!")
+        }
+
+        delay::FreeRtos::delay_ms(1000);
     }
-
-    Ok(())
 }
