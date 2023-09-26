@@ -68,9 +68,7 @@ fn main() -> anyhow::Result<()> {
     let config = spi::config::Config::new();
     let device = SpiDeviceDriver::new(&driver, Some(sda), &config)?;
 
-    let spi = SpiInterface::new(device).with_delay(|| {
-        delay::Delay::delay_us(1);
-    });
+    let spi = SpiInterface::new(device);
     let mut mfrc522 = mfrc522::Mfrc522::new(spi).init()?;
 
     loop {
@@ -79,7 +77,7 @@ fn main() -> anyhow::Result<()> {
         log::info!("mfrc522 reported version is 0x{:X}", version);
         if !(version == 0x91 || version == 0x92) {
             log::error!("version mismatch!");
-            delay::FreeRtos::delay_ms(2000);
+            delay::Delay::delay_ms(2000);
             continue;
         }
 
