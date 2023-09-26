@@ -1,25 +1,25 @@
 use anyhow::Context;
-use embedded_graphics::{
-    mono_font::{ascii::FONT_6X10, MonoTextStyle},
-    pixelcolor::BinaryColor,
-    prelude::Point,
-    text::Text,
-    Drawable,
-};
+// use embedded_graphics::{
+//     mono_font::{ascii::FONT_6X10, MonoTextStyle},
+//     pixelcolor::BinaryColor,
+//     prelude::Point,
+//     text::Text,
+//     Drawable,
+// };
 use esp_idf_hal::{
     delay,
-    i2c::{I2cConfig, I2cDriver},
+    // i2c::{I2cConfig, I2cDriver},
     prelude::Peripherals,
     spi::{self, SpiDeviceDriver, SpiDriver, SpiDriverConfig},
-    units::KiloHertz,
+    // units::KiloHertz,
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 use mfrc522::comm::eh02::spi::SpiInterface;
-use ssd1306::{
-    prelude::{Brightness, DisplayConfig},
-    rotation::DisplayRotation,
-    size::DisplaySize128x64,
-};
+// use ssd1306::{
+//     prelude::{Brightness, DisplayConfig},
+//     rotation::DisplayRotation,
+//     size::DisplaySize128x64,
+// };
 
 fn main() -> anyhow::Result<()> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
@@ -35,27 +35,27 @@ fn main() -> anyhow::Result<()> {
 
     let peripherals = Peripherals::take().context("no peripherals")?;
 
-    let i2c = peripherals.i2c0;
-    let scl = peripherals.pins.gpio22;
-    let sda = peripherals.pins.gpio21;
-    let config = I2cConfig::new().baudrate(KiloHertz(100).into());
-    let i2c_driver = I2cDriver::new(i2c, sda, scl, &config)?;
-    {
-        let i2c = ssd1306::I2CDisplayInterface::new(i2c_driver);
-        let mut display = ssd1306::Ssd1306::new(i2c, DisplaySize128x64, DisplayRotation::Rotate180)
-            .into_buffered_graphics_mode();
-        display.init().map_err(|err| anyhow::anyhow!("{:?}", err))?;
-        display
-            .set_brightness(Brightness::DIM)
-            .map_err(|err| anyhow::anyhow!("{:?}", err))?;
-        display.clear_buffer();
+    // {
+    //     let i2c = peripherals.i2c0;
+    //     let scl = peripherals.pins.gpio22;
+    //     let sda = peripherals.pins.gpio21;
+    //     let config = I2cConfig::new().baudrate(KiloHertz(100).into());
+    //     let i2c_driver = I2cDriver::new(i2c, sda, scl, &config)?;
+    //     let i2c = ssd1306::I2CDisplayInterface::new(i2c_driver);
+    //     let mut display = ssd1306::Ssd1306::new(i2c, DisplaySize128x64, DisplayRotation::Rotate180)
+    //         .into_buffered_graphics_mode();
+    //     display.init().map_err(|err| anyhow::anyhow!("{:?}", err))?;
+    //     display
+    //         .set_brightness(Brightness::DIM)
+    //         .map_err(|err| anyhow::anyhow!("{:?}", err))?;
+    //     display.clear_buffer();
 
-        let style = MonoTextStyle::new(&FONT_6X10, BinaryColor::On);
-        Text::new("Hello Rust!", Point::new(20, 30), style)
-            .draw(&mut display)
-            .map_err(|err| anyhow::anyhow!("{:?}", err))?;
-        display.flush().unwrap();
-    }
+    //     let style = MonoTextStyle::new(&FONT_6X10, BinaryColor::On);
+    //     Text::new("Hello Rust!", Point::new(20, 30), style)
+    //         .draw(&mut display)
+    //         .map_err(|err| anyhow::anyhow!("{:?}", err))?;
+    //     display.flush().unwrap();
+    // }
 
     let spi = peripherals.spi2;
     let sda = peripherals.pins.gpio5;
