@@ -4,14 +4,15 @@ version = "0.1.0"
 authors = ["Danylo Kondratiev <knightpp@proton.me>"]
 edition = "2021"
 resolver = "2"
-rust-version = "1.66"
+rust-version = "1.71"
 
 [profile.release]
-opt-level = "s"
+opt-level = 0
+codegen-units = 1
 
 [profile.dev]
 debug = true    # Symbols are nice and they don't increase the size on Flash
-opt-level = "z"
+opt-level = 0
 
 [features]
 
