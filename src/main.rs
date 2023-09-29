@@ -7,7 +7,6 @@ use anyhow::Context;
 //     Drawable,
 // };
 use esp_idf_hal::{
-    delay,
     // i2c::{I2cConfig, I2cDriver},
     prelude::Peripherals,
     spi::{self, SpiDeviceDriver, SpiDriver, SpiDriverConfig},
@@ -57,13 +56,13 @@ fn main() -> anyhow::Result<()> {
     //     display.flush().unwrap();
     // }
 
-    let spi = peripherals.spi2;
+    let spi = peripherals.spi3;
     let sda = peripherals.pins.gpio5;
     let sclk = peripherals.pins.gpio18;
     let miso = peripherals.pins.gpio19;
     let mosi = peripherals.pins.gpio23;
 
-    let driver = SpiDriver::new(spi, sclk, miso, Some(mosi), &SpiDriverConfig::new())
+    let driver = SpiDriver::new(spi, sclk, mosi, Some(miso), &SpiDriverConfig::new())
         .context("create spi driver")?;
     let config = spi::config::Config::new();
     let device = SpiDeviceDriver::new(&driver, Some(sda), &config)?;
@@ -71,17 +70,11 @@ fn main() -> anyhow::Result<()> {
     let spi = SpiInterface::new(device);
     let mut mfrc522 = mfrc522::Mfrc522::new(spi).init()?;
 
-    loop {
-        let version = mfrc522.version()?;
+    let version = mfrc522.version()?;
 
-        log::info!("mfrc522 reported version is 0x{:X}", version);
-        if !(version == 0x91 || version == 0x92) {
-            log::error!("version mismatch!");
-            delay::Delay::delay_ms(2000);
-            continue;
-        }
-
-        break;
+    log::info!("mfrc522 reported version is 0x{:X}", version);
+    if !(version == 0x91 || version == 0x92) {
+        log::error!("version mismatch!");
     }
 
     Ok(())
