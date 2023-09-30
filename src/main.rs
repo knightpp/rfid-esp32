@@ -7,13 +7,17 @@ use anyhow::Context;
 //     Drawable,
 // };
 use esp_idf_hal::{
+    delay::Delay,
+    // units::KiloHertz,
     // i2c::{I2cConfig, I2cDriver},
     prelude::Peripherals,
     spi::{self, SpiDeviceDriver, SpiDriver, SpiDriverConfig},
-    // units::KiloHertz,
 };
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
-use mfrc522::comm::eh02::spi::SpiInterface;
+use mfrc522::{
+    comm::{eh02::spi::SpiInterface, Interface},
+    Initialized, Mfrc522,
+};
 // use ssd1306::{
 //     prelude::{Brightness, DisplayConfig},
 //     rotation::DisplayRotation,
@@ -74,8 +78,54 @@ fn main() -> anyhow::Result<()> {
 
     log::info!("mfrc522 reported version is 0x{:X}", version);
     if !(version == 0x91 || version == 0x92) {
-        log::error!("version mismatch!");
+        anyhow::bail!("version mismatch")
     }
 
+    loop {
+        const CARD_UID: [u8; 4] = [34, 246, 178, 171];
+        const TAG_UID: [u8; 4] = [128, 170, 179, 76];
+
+        if let Ok(atqa) = mfrc522.reqa() {
+            if let Ok(uid) = mfrc522.select(&atqa) {
+                log::info!("UID: {:?}", uid.as_bytes());
+
+                if uid.as_bytes() == CARD_UID {
+                    log::info!("CARD");
+                } else if uid.as_bytes() == TAG_UID {
+                    log::info!("TAG");
+                }
+
+                handle_authenticate(&mut mfrc522, &uid, |m| {
+                    let data = m.mf_read(1)?;
+                    log::info!("read {:?}", data);
+                    Ok(())
+                })
+                .ok();
+            }
+        }
+
+        Delay::delay_ms(1000u32);
+    }
+}
+
+fn handle_authenticate<E, COMM: Interface<Error = E>, F>(
+    mfrc522: &mut Mfrc522<COMM, Initialized>,
+    uid: &mfrc522::Uid,
+    action: F,
+) -> anyhow::Result<()>
+where
+    F: FnOnce(&mut Mfrc522<COMM, Initialized>) -> anyhow::Result<()>,
+    E: std::fmt::Debug + std::marker::Sync + std::marker::Send + 'static,
+{
+    // Use *default* key, this should work on new/empty cards
+    let key = [0xFF; 6];
+    if mfrc522.mf_authenticate(uid, 1, &key).is_ok() {
+        action(mfrc522)?;
+    } else {
+        log::warn!("Could not authenticate");
+    }
+
+    mfrc522.hlta()?;
+    mfrc522.stop_crypto1()?;
     Ok(())
 }
